@@ -3,7 +3,7 @@
  * Handles email sending via Azure Communications Function
  */
 
-import { config, getFunctionHeaders } from '@/lib/config';
+import { config } from '@/lib/config';
 
 export interface SendEmailRequest {
   name: string;

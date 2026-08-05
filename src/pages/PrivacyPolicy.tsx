@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 
 const PrivacyPolicy: React.FC = () => {
@@ -129,7 +129,7 @@ const PrivacyPolicy: React.FC = () => {
 
                     <br />
                     <h2>10. Cookies</h2>
-                    <p>Our website uses cookies to enhance functionality, authentication, and analytics. You can manage or disable cookies via your browser settings. For more details, see our <a href="/cookie-policy" className="text-australis-indigo">Cookie Policy</a>.</p>
+                    <p>Our website uses cookies to enhance functionality, authentication, and analytics. You can manage or disable cookies via your browser settings. For more details, see our <Link to="/cookie-policy" className="text-australis-indigo">Cookie Policy</Link>.</p>
 
                     <br />
                     <h2>11. Children’s Privacy</h2>

@@ -14,7 +14,13 @@ import {
   SendEmailResponse
 } from '@/services/communicationsService';
 
-export const useEmailSending = (useOptimistic: boolean = true) => {
+/**
+ * Lead-capture forms must await the real send. The optimistic variants report
+ * success before the request is made and swallow a permanent failure into the
+ * console, which loses the lead silently — so optimistic is opt-in, never the
+ * default. No lead form currently opts in.
+ */
+export const useEmailSending = (useOptimistic: boolean = false) => {
   const [isLoading, setIsLoading] = useState(false);
 
   const sendExpertPanelInterest = async (email: string, recaptchaToken?: string): Promise<SendEmailResponse> => {

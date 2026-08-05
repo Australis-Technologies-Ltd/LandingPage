@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Check } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useEmailSending } from '@/hooks/useEmailSending';
+import SubmitFailureMessage from '@/components/SubmitFailureMessage';
 const NewsletterForm = () => {
   const [email, setEmail] = useState('');
   const [isSubscribed, setIsSubscribed] = useState(false);
@@ -32,13 +33,24 @@ const NewsletterForm = () => {
           description: "We'll keep you updated with the latest news. Thanks for subscribing!",
           duration: 6000,
         });
+      } else {
+        // Previously this branch did nothing at all — a failed signup looked
+        // identical to no interaction.
+        console.error('Waiting list signup failed:', result.error);
+        toast({
+          variant: "destructive",
+          title: "We couldn't subscribe you",
+          description: <SubmitFailureMessage />,
+          duration: 10000,
+        });
       }
     } catch (error) {
       console.error('Waiting list signup failed:', error);
       toast({
         variant: "destructive",
-        title: "Oops! Something went wrong",
-        description: "We couldn't process your subscription right now. Please try again in a moment.",
+        title: "We couldn't subscribe you",
+        description: <SubmitFailureMessage />,
+        duration: 10000,
       });
     }
   };

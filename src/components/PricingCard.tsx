@@ -64,7 +64,20 @@ const PricingCard = ({
           ))}
         </ul>
         {children}
-      
+
+        {/* Primary call to action — pinned to the bottom so cards of differing
+            height line their buttons up. */}
+        <div className="mt-auto pt-4">
+          <Button
+            type="button"
+            onClick={onContact}
+            className={`w-full rounded-xl font-semibold transition-all duration-300 ${buttonClass ?? ""}`}
+            size="lg"
+          >
+            {ctaText}
+          </Button>
+        </div>
+
         {/* Accordion Trigger and Content */}
         {detailedFeatures.length > 0 && (
           <>

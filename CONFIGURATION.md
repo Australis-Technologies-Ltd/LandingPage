@@ -24,17 +24,13 @@ VITE_AZURE_MAPS_KEY=your_azure_maps_key
 VITE_AZURE_STORAGE_ACCOUNT=your_storage_account
 VITE_AZURE_STORAGE_KEY=your_storage_key
 
-# API Configuration
-VITE_API_BASE_URL=https://australis-energy-dev-app.azurewebsites.net/api
-VITE_API_KEY=your_api_key
-
-# Azure Functions
-VITE_GEOSERVICES_FUNCTION_URL=https://your-geoservices-function-app.azurewebsites.net
-VITE_GEOSERVICES_FUNCTION_KEY=your_geoservices_function_key
-
-# Communications Function (Email sending)
+# Communications Function (Email sending) — the only variables the deploy
+# workflow injects, and the only ones treated as required.
 VITE_COMMUNICATIONS_FUNCTION_URL=https://your-communications-function-app.azurewebsites.net
 VITE_COMMUNICATIONS_FUNCTION_KEY=your_communications_function_key
+
+# reCAPTCHA (falls back to a hardcoded site key in config.ts if unset)
+VITE_RECAPTCHA_SITE_KEY=your_recaptcha_site_key
 
 # Azure Service Bus
 VITE_SERVICE_BUS_CONNECTION_STRING=your_service_bus_connection_string
@@ -45,6 +41,9 @@ VITE_APPINSIGHTS_INSTRUMENTATION_KEY=your_appinsights_key
 # Environment
 VITE_APP_ENV=development
 ```
+
+This list is exhaustive: it is every `VITE_` variable [src/lib/config.ts](src/lib/config.ts)
+actually reads. Anything else you see referenced elsewhere is stale.
 
 ### 3. Security Best Practices
 
@@ -80,26 +79,22 @@ VITE_APP_ENV=development
 2. Select your function app → Functions → App keys
 3. Copy the function URL and key
 
-#### Australis API:
-1. Contact your backend team for the API key
-2. Or generate one through the API management portal
-
 ### 5. Using Configuration in Code
 
 ```typescript
 import { config } from '@/lib/config';
-import { apiService } from '@/services/apiService';
-import { geoServicesClient } from '@/services/geoServices';
 
 // Configuration is automatically loaded
 console.log(config.env); // 'development'
 
-// API service uses configuration automatically
-const projects = await apiService.getProjects();
-
-// GeoServices client uses configuration automatically
-const result = await geoServicesClient.startCalculation(request);
+// The Communications Function client reads config.functions.communications itself
+import { sendCtaFormSubmission } from '@/services/communicationsService';
+const result = await sendCtaFormSubmission(name, email, companyRole, challenge);
 ```
+
+`communicationsService` is the only backend client in the repo. The former
+`apiService` (.NET Web API) and `geoServices` (Azure Functions) clients were
+unreferenced and pointed at a decommissioned host; both were removed.
 
 ### 6. Environment-Specific Configuration
 
@@ -129,6 +124,12 @@ Set `VITE_APP_ENV` to control environment-specific behavior.
 - Verify Supabase allowed origins
 
 ### 8. Production Deployment
+
+The live site deploys to **GitHub Pages** via
+[.github/workflows/deploy-pages.yml](.github/workflows/deploy-pages.yml), which injects
+only `VITE_COMMUNICATIONS_FUNCTION_URL` (repo variable) and
+`VITE_COMMUNICATIONS_FUNCTION_KEY` (repo secret). Every other variable falls back to its
+default in `config.ts`. The hosts below are configured but are **not** the live one.
 
 #### Vercel:
 ```bash

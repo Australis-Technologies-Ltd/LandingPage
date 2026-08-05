@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { Linkedin } from 'lucide-react';
 import Logo from '@/components/Logo';
 
@@ -60,7 +61,7 @@ const Footer = () => {
               <li><a href="#benefits" className="text-white/55 hover:text-australis-aqua transition-colors">Benefits</a></li>
               <li><a href="#features" className="text-white/55 hover:text-australis-aqua transition-colors">Features</a></li>
               <li><a href="#demo" className="text-white/55 hover:text-australis-aqua transition-colors">Demo</a></li>
-              <li><a href="/pricing" className="text-white/55 hover:text-australis-aqua transition-colors">Pricing</a></li>
+              <li><Link to="/pricing" className="text-white/55 hover:text-australis-aqua transition-colors">Pricing</Link></li>
             </ul>
           </div>
 
@@ -68,13 +69,13 @@ const Footer = () => {
             <h4 className="font-semibold mb-4 text-white/90">Legal</h4>
             <ul className="space-y-2.5">
               <li>
-                <a href="/privacy-policy" className="text-white/55 hover:text-australis-aqua transition-colors">Privacy Policy</a>
+                <Link to="/privacy-policy" className="text-white/55 hover:text-australis-aqua transition-colors">Privacy Policy</Link>
               </li>
               <li>
-                <a href="/terms-of-service" className="text-white/55 hover:text-australis-aqua transition-colors">Terms of Service</a>
+                <Link to="/terms-of-service" className="text-white/55 hover:text-australis-aqua transition-colors">Terms of Service</Link>
               </li>
               <li>
-                <a href="/cookie-policy" className="text-white/55 hover:text-australis-aqua transition-colors">Cookie Policy</a>
+                <Link to="/cookie-policy" className="text-white/55 hover:text-australis-aqua transition-colors">Cookie Policy</Link>
               </li>
             </ul>
           </div>

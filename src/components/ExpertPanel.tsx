@@ -3,6 +3,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { BrainCircuit, Sparkles, Users, Clock, Calendar } from "lucide-react";
 import { useEmailSending } from "@/hooks/useEmailSending";
+import SubmitFailureMessage from "@/components/SubmitFailureMessage";
 
 
 import { useRecaptcha } from "@/hooks/useRecaptcha";
@@ -16,7 +17,7 @@ const ExpertPanel = () => {
   const [email, setEmail] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [activeForm, setActiveForm] = useState<FormType>('demo-request');
-  const { sendExpertPanelInterest, sendWaitingListInterest, sendDemoRequest, isLoading } = useEmailSending(true); // Enable optimistic UI
+  const { sendExpertPanelInterest, sendWaitingListInterest, sendDemoRequest, isLoading } = useEmailSending();
 
   const formConfig = {
     'demo-request': {
@@ -77,18 +78,21 @@ const ExpertPanel = () => {
         });
         setTimeout(() => setIsSubmitted(false), 5000);
       } else {
+        console.error(`${activeForm} submission failed:`, result.error);
         toast({
           variant: "destructive",
-          title: "Error",
-          description: result.error || "Please check your email address and try again.",
+          title: "We couldn't submit that",
+          description: <SubmitFailureMessage />,
+          duration: 10000,
         });
       }
     } catch (error) {
       console.error(`${activeForm} submission failed:`, error);
       toast({
         variant: "destructive",
-        title: "Oops! Something went wrong",
-        description: "We couldn't submit your request right now. Please try again in a moment.",
+        title: "We couldn't submit that",
+        description: <SubmitFailureMessage />,
+        duration: 10000,
       });
     }
   };

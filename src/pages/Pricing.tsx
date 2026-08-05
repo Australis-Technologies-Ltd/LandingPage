@@ -146,7 +146,9 @@ const tiers = [
 const Pricing = () => {
   const navigate = useNavigate();
 
-  // Remove the previous handleContact function as we will use mailto links
+  // Every tier's CTA sends the visitor to the enquiry form on the home page.
+  // Index scrolls to the hash target once it has mounted.
+  const handleContact = () => navigate("/#contact");
 
   return (
     <section className="py-24 min-h-screen bg-gradient-to-br from-australis-offWhite via-white to-australis-lightGray relative overflow-hidden">
@@ -186,6 +188,7 @@ const Pricing = () => {
               recommended={tier.recommended}
               ctaText={tier.ctaText}
               buttonClass={tier.buttonClass || ""}
+              onContact={handleContact}
             />
           ))}
         </div>
@@ -202,7 +205,7 @@ const Pricing = () => {
           For detailed usage info, integrations, or to discuss custom enterprise solutions,{" "}
           <a
             className="inline underline text-australis-indigo hover:text-australis-aqua font-medium transition-colors"
-            href="mailto:hello@autralis.energy?subject=Enquiry%20from%20website"
+            href="mailto:hello@australis.energy?subject=Enquiry%20from%20website"
             target="_blank"
             rel="noopener noreferrer"
           >

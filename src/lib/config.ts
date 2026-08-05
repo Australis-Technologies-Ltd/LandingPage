@@ -35,18 +35,8 @@ interface AppConfig {
     };
   };
   
-  // API Configuration
-  api: {
-    baseUrl: string;
-    key: string;
-  };
-  
   // Azure Functions
   functions: {
-    geoServices: {
-      url: string;
-      key: string;
-    };
     communications: {
       url: string;
       key: string;
@@ -123,16 +113,7 @@ export const config: AppConfig = {
     },
   },
   
-  api: {
-    baseUrl: getEnvVar('VITE_API_BASE_URL', 'https://australis-energy-dev-app.azurewebsites.net/api'),
-    key: getEnvVar('VITE_API_KEY'),
-  },
-  
   functions: {
-    geoServices: {
-      url: getEnvVar('VITE_GEOSERVICES_FUNCTION_URL'),
-      key: getEnvVar('VITE_GEOSERVICES_FUNCTION_KEY'),
-    },
     communications: {
       url: getEnvVar('VITE_COMMUNICATIONS_FUNCTION_URL', 'http://localhost:7027/api/send-email'),
       key: getEnvVar('VITE_COMMUNICATIONS_FUNCTION_KEY', ''),
@@ -172,38 +153,6 @@ export const isDevelopment = (): boolean => config.env === 'development';
  * Helper function to check if we're in production mode
  */
 export const isProduction = (): boolean => config.env === 'production';
-
-/**
- * Helper to get API headers with authentication
- */
-export const getApiHeaders = (): Record<string, string> => {
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-  };
-  
-  if (config.api.key) {
-    headers['X-API-Key'] = config.api.key;
-  }
-  
-  return headers;
-};
-
-/**
- * Helper to get Azure Function headers with authentication
- */
-export const getFunctionHeaders = (functionType: 'geoServices' | 'communications' = 'geoServices'): Record<string, string> => {
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-  };
-  
-  if (functionType === 'geoServices' && config.functions.geoServices.key) {
-    headers['x-functions-key'] = config.functions.geoServices.key;
-  } else if (functionType === 'communications' && config.functions.communications.key) {
-    headers['x-functions-key'] = config.functions.communications.key;
-  }
-  
-  return headers;
-};
 
 // Initialize configuration on module load
 initializeConfig();

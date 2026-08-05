@@ -36,12 +36,12 @@ const Header = () => {
       }`}
     >
       <div className="container-custom flex items-center justify-between h-16">
-        <a href="https://australis.energy" className="flex items-center gap-2.5 group">
+        <Link to="/" className="flex items-center gap-2.5 group">
           <Logo className="h-8 w-auto transition-transform duration-300 group-hover:scale-105" />
           <span className="text-xl font-bold text-australis-navy tracking-tight">
             Australis
           </span>
-        </a>
+        </Link>
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-1">

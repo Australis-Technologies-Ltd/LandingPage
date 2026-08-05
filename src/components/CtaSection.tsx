@@ -2,8 +2,9 @@ import { Button } from '@/components/ui/button';
 import NewsletterForm from './NewsletterForm';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { sendCtaFormSubmissionOptimistic } from '@/services/communicationsService';
+import { sendCtaFormSubmission } from '@/services/communicationsService';
 import { useRecaptcha } from '@/hooks/useRecaptcha';
+import SubmitFailureMessage from '@/components/SubmitFailureMessage';
 
 const CtaSection = () => {
   const { toast } = useToast();
@@ -46,7 +47,8 @@ const CtaSection = () => {
       // Execute reCAPTCHA
       const recaptchaToken = await executeRecaptcha('cta_form_submission');
       
-      const result = await sendCtaFormSubmissionOptimistic(
+      // Awaited, not optimistic — the visitor is only told this worked once it has.
+      const result = await sendCtaFormSubmission(
         formData.name,
         formData.workEmail,
         formData.companyRole,
@@ -60,22 +62,24 @@ const CtaSection = () => {
           description: "We've received your information and will be in touch soon.",
           duration: 5000,
         });
-        
+
         setFormData({ name: '', workEmail: '', companyRole: '', challenge: '' });
       } else {
-        // Handle validation errors immediately
+        console.error('CTA form submission failed:', result.error);
         toast({
           variant: "destructive",
-          title: "Error",
-          description: result.error || "Please check your information and try again.",
+          title: "We couldn't submit that",
+          description: <SubmitFailureMessage />,
+          duration: 10000,
         });
       }
     } catch (error) {
-      console.error('Form submission failed:', error);
+      console.error('CTA form submission failed:', error);
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Something went wrong. Please try again.",
+        title: "We couldn't submit that",
+        description: <SubmitFailureMessage />,
+        duration: 10000,
       });
     } finally {
       setIsSubmitting(false);
@@ -83,7 +87,7 @@ const CtaSection = () => {
   };
 
   return (
-    <section className="py-20 relative overflow-hidden">
+    <section id="contact" className="py-20 scroll-mt-20 relative overflow-hidden">
       {/* Background with gradient and blur effect */}
       <div className="absolute inset-0 bg-gradient-to-br from-australis-navy via-australis-navy/95 to-[#2d2f4a] z-0"></div>
       <div className="absolute inset-0 bg-grid-pattern-light z-0"></div>
