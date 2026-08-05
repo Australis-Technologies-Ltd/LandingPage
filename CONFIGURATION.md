@@ -24,12 +24,14 @@ VITE_AZURE_MAPS_KEY=your_azure_maps_key
 VITE_AZURE_STORAGE_ACCOUNT=your_storage_account
 VITE_AZURE_STORAGE_KEY=your_storage_key
 
-# Communications Function (Email sending) — the only variables the deploy
-# workflow injects, and the only ones treated as required.
-VITE_COMMUNICATIONS_FUNCTION_URL=https://your-communications-function-app.azurewebsites.net
-VITE_COMMUNICATIONS_FUNCTION_KEY=your_communications_function_key
+# Portal.API — lead capture (POST /access-request). The only variable the deploy
+# workflow injects. Not a secret: VITE_ values are baked into the bundle at build
+# time and are publicly readable. Defaults to the dev host if unset; production
+# Portal.API is parked and serves no traffic.
+VITE_PORTAL_API_BASE_URL=https://api-dev.australis.energy
 
-# reCAPTCHA (falls back to a hardcoded site key in config.ts if unset)
+# reCAPTCHA (falls back to a hardcoded site key in config.ts if unset).
+# Currently unused — no form calls the hook and nothing verifies a token.
 VITE_RECAPTCHA_SITE_KEY=your_recaptcha_site_key
 
 # Azure Service Bus
@@ -87,14 +89,16 @@ import { config } from '@/lib/config';
 // Configuration is automatically loaded
 console.log(config.env); // 'development'
 
-// The Communications Function client reads config.functions.communications itself
-import { sendCtaFormSubmission } from '@/services/communicationsService';
-const result = await sendCtaFormSubmission(name, email, companyRole, challenge);
+// The lead-capture client reads config.portalApi.baseUrl itself
+import { LeadSource, submitLead } from '@/services/accessRequestService';
+const result = await submitLead({ email, source: LeadSource.Newsletter });
 ```
 
-`communicationsService` is the only backend client in the repo. The former
-`apiService` (.NET Web API) and `geoServices` (Azure Functions) clients were
-unreferenced and pointed at a decommissioned host; both were removed.
+`accessRequestService` is the only backend client in the repo, and the only point
+where it touches the Australis platform. Three former clients were removed:
+`communicationsService` (Azure Communications Function), plus `apiService`
+(.NET Web API) and `geoServices` (Azure Functions), which were unreferenced and
+pointed at a decommissioned host.
 
 ### 6. Environment-Specific Configuration
 
@@ -127,9 +131,9 @@ Set `VITE_APP_ENV` to control environment-specific behavior.
 
 The live site deploys to **GitHub Pages** via
 [.github/workflows/deploy-pages.yml](.github/workflows/deploy-pages.yml), which injects
-only `VITE_COMMUNICATIONS_FUNCTION_URL` (repo variable) and
-`VITE_COMMUNICATIONS_FUNCTION_KEY` (repo secret). Every other variable falls back to its
-default in `config.ts`. The hosts below are configured but are **not** the live one.
+only `VITE_PORTAL_API_BASE_URL` (repo **variable**, not a secret). Every other variable
+falls back to its default in `config.ts`. The hosts below are configured but are **not**
+the live one.
 
 #### Vercel:
 ```bash

@@ -40,38 +40,49 @@ Routing lives in [src/App.tsx](src/App.tsx) (React Router). Non-index routes are
 Section anchor IDs currently in use: `#benefits`, `#features`, `#demo`, `#faq`, `#expert-panel`, and **`#contact`** on `CtaSection` — the main enquiry form, and the target every pricing CTA navigates to. Cross-route hash links (e.g. `/pricing` → `/#contact`) need the scroll effect in [Index.tsx](src/pages/Index.tsx): the router changes the URL but does not scroll on its own.
 
 ### Configuration is centralized and build-time
-All runtime configuration flows through [src/lib/config.ts](src/lib/config.ts), which reads `VITE_`-prefixed env vars via `import.meta.env` and exposes a single typed `config` object. **These vars are injected at build time, not runtime, and are public in the shipped bundle** — never put real secrets here. Only `VITE_COMMUNICATIONS_FUNCTION_URL` / `VITE_COMMUNICATIONS_FUNCTION_KEY` are treated as required (the rest only warn if missing). [CONFIGURATION.md](CONFIGURATION.md) and [.env.example](.env.example) list **every** variable `config.ts` reads and are kept exhaustive — if you add or remove one, update both.
+All runtime configuration flows through [src/lib/config.ts](src/lib/config.ts), which reads `VITE_`-prefixed env vars via `import.meta.env` and exposes a single typed `config` object. **These vars are injected at build time, not runtime, and are public in the shipped bundle** — never put real secrets here. `VITE_PORTAL_API_BASE_URL` is the only one `validateConfig` warns about; it defaults to `https://api-dev.australis.energy` (dev is the only Portal.API environment serving traffic — production is parked). [CONFIGURATION.md](CONFIGURATION.md) and [.env.example](.env.example) list **every** variable `config.ts` reads and are kept exhaustive — if you add or remove one, update both.
 
 Several config sections (`azure.storage`, `azure.appInsights`, `azure.maps`, `serviceBus`) are declared and populated but read by nothing; `azure.maps` in particular has no Azure Maps library installed (maps run on Mapbox GL). They are inert, not wiring.
 
 Two secrets are hardcoded as fallbacks in source rather than being env-only: the Supabase URL + anon key in [client.ts](src/integrations/supabase/client.ts), and the Mapbox token in `FunctionalMap.tsx`. Both are publishable-class keys, but note that the site builds and runs with **no** `.env` at all because of them.
 
-### Service layer — one client
-[communicationsService](src/services/communicationsService.ts) → **Azure Communications Function** for all outbound email (contact, demo request, waiting list, expert panel, CTA). It is the **only** backend client in the repo. The function key is passed as a `?code=` query param, not a header.
+### Service layer — one client, and it is the platform's API
+[accessRequestService](src/services/accessRequestService.ts) → **Portal.API `POST /access-request`** (`config.portalApi.baseUrl`). It is the **only** backend client in the repo, and the **only** point where this repo touches the Australis platform.
 
-It exposes a dual API: standard `send*` methods await the function, while `send*Optimistic` variants return success immediately and process in the background with exponential-backoff retry, giving up into `console.error`. **Every lead form uses the awaited path.** `useEmailSending(useOptimistic = false)` defaults to awaited and no caller opts in — the optimistic half of the service and hook is currently dead but retained (removing it is a separate decision). Do not reintroduce it for lead capture: it reports success before the request is made, so a failed send is indistinguishable from a successful one and the lead is lost silently.
+**This is a deliberate, narrow exception to the standalone rule above.** It is one anonymous endpoint, nothing else. Do not generalise it into a platform SDK, do not add authenticated calls, and do not reach for other Portal.API endpoints from here.
 
-Two former clients — `apiService` (.NET Web API) and `geoServicesClient` (Python Azure Functions) — were **deleted**. Both were unreferenced and defaulted to the decommissioned `australis-energy-dev-app.azurewebsites.net` host. Their `config` sections (`config.api`, `config.functions.geoServices`) and the `getApiHeaders`/`getFunctionHeaders` helpers went with them. Do not re-add a .NET or geospatial client here without a deliberate decision — this repo has no platform integration (see above).
+- `submitLead({ email, source, name? })`. `source` values mirror Portal.API's `AccessRequestSources` constants — **keep the strings in step with that class**; an unrecognised value is stored as sent, so a typo silently produces a mis-attributed lead rather than an error.
+- `name` and `companyName` are optional on the API *only because* a `source` is sent. A request without a source is treated as a portal caller and requires both. The client omits `name` rather than sending `""`, because Portal.API stores null for "never collected" and that must stay distinct from "asked and left blank".
+- **Never send cookies.** The marketing origins are allowed under a deliberately non-credentialed CORS policy; adding `credentials: 'include'` would fail the preflight.
+- The endpoint is throttled per client IP and answers **429**, which the client reports as `reason: 'rate-limited'` so forms can say "try again shortly" rather than showing a generic failure.
+
+Three former clients were **deleted**: `communicationsService` (Azure Communications Function — emailed a lead and persisted nothing), plus `apiService` and `geoServicesClient`, which were unreferenced and pointed at the decommissioned `australis-energy-dev-app.azurewebsites.net` host. The `useEmailSending` hook and the optimistic-send machinery went with them. **Do not reintroduce optimistic sending for lead capture**: it reports success before the request is made, so a failed send is indistinguishable from a successful one and the lead is lost silently.
+
+The Azure Communications Function itself is still deployed and still defined in `Infrastructure/Azure/prod/FunctionApp.communications.tf` — this repo simply no longer calls it. Decommissioning the resource is a separate decision.
 
 ### Lead capture — every form must tell the truth
-Three forms capture leads, all going through the Communications Function:
+Three forms capture leads, all posting to Portal.API `POST /access-request`:
 
-| Form | File | Collects |
-|---|---|---|
-| Main enquiry (`#contact`) | [CtaSection.tsx](src/components/CtaSection.tsx) | name, work email, company + role, primary challenge |
-| Expert panel / waiting list | [ExpertPanel.tsx](src/components/ExpertPanel.tsx) | email only |
-| Newsletter | [NewsletterForm.tsx](src/components/NewsletterForm.tsx) | email only |
+| Form | File | Collects | Transmits | `source` |
+|---|---|---|---|---|
+| Main enquiry (`#contact`) | [CtaSection.tsx](src/components/CtaSection.tsx) | name, work email, company + role, primary challenge | **name + email only** | `landing-cta-form` |
+| Expert panel | [ExpertPanel.tsx](src/components/ExpertPanel.tsx) | email | email | `landing-expert-panel` |
+| Waiting list | same file, second tab | email | email | `landing-waiting-list` |
+| Newsletter | [NewsletterForm.tsx](src/components/NewsletterForm.tsx) | email | email | `landing-newsletter` |
 
-`ExpertPanel`'s third tab (`demo-request`, the default) renders **no form** — it is an external Outlook booking link. Its `sendDemoRequest` handler is therefore unreachable via the UI.
+**The enquiry form's company-role and primary-challenge answers are collected but never transmitted** — Portal.API has no columns for them. This is a known, accepted gap (tracked in Portal.API's `docs/BACKLOG.md`), not an oversight. They stay on the form because they shape the conversation the visitor is having. Do not smuggle them into `name` or `companyName` to "fix" it, and do not quietly drop them from the form.
+
+`ExpertPanel`'s third tab (`demo-request`, the default) renders **no form** — it is an external Outlook booking link. Its config entry carries `source: null` and `handleSubmit` returns early on it, so that tab can never submit.
 
 Rules for anything that captures a lead:
-- **Await the real result.** Never use a `*Optimistic` send.
+- **Await the real result.** Never report success before the request has completed.
 - **Surface failure to the visitor**, with a route that does not depend on the form — use the shared [SubmitFailureMessage](src/components/SubmitFailureMessage.tsx), which points at `hello@australis.energy`. Success and failure must be distinguishable from the outside.
+- **Distinguish 429 from a real failure.** Rate-limiting is transient and self-resolving, so tell the visitor to wait a moment rather than sending them to email us.
 - Log the technical error to the console; never show a raw transport error in a toast.
 
 Pricing tier CTAs ([PricingCard.tsx](src/components/PricingCard.tsx)) take `ctaText`/`buttonClass`/`onContact` and render a real button — [Pricing.tsx](src/pages/Pricing.tsx) wires all three tiers to `/#contact`. If you add a prop to that card, render it or don't accept it.
 
-**reCAPTCHA is decorative.** [useRecaptcha](src/hooks/useRecaptcha.ts) falls back to `skipRecaptcha` whenever the script fails to load and returns `null`, so a token is not guaranteed on submit, and **nothing verifies it server-side anywhere**. Do not describe the forms as bot-protected.
+**reCAPTCHA is decorative, and now unwired.** [useRecaptcha](src/hooks/useRecaptcha.ts) falls back to `skipRecaptcha` whenever the script fails to load and returns `null`, so a token was never guaranteed, and **nothing verifies it server-side anywhere** — Portal.API's request model has no token field. The forms therefore no longer call the hook, leaving it **unreferenced**; it is retained rather than deleted because reintroducing bot protection is a real decision, not a cleanup. Do not describe the forms as bot-protected. Abuse control today is Portal.API's per-IP rate limit, nothing else.
 
 ### Data layer — Supabase + TanStack Query
 [Supabase](src/integrations/supabase/client.ts) provides auth and a Postgres DB (`projects`, `project_reports` tables). Most data fetching is done by calling `supabase.from(...)` directly inside hooks/pages (e.g. `useDashboard`, `ProjectDetail`) rather than through a repository abstraction. `QueryClientProvider` (TanStack Query) wraps the app in `App.tsx`, but is lightly used so far. The supabase client has **hardcoded fallback URL + anon key** for when env vars are absent.
@@ -99,7 +110,7 @@ Pricing tier CTAs ([PricingCard.tsx](src/components/PricingCard.tsx)) take `ctaT
 
 ## Deployment
 
-The live site is **GitHub Pages, driven by [.github/workflows/deploy-pages.yml](.github/workflows/deploy-pages.yml)**: push to `main` → `npm ci && npm run build` → upload `dist/` via `actions/upload-pages-artifact` → `actions/deploy-pages`. The workflow writes `dist/CNAME` = `australis.energy`, touches `.nojekyll`, and copies `index.html` to `404.html` so client-side routes survive a hard refresh. Only `VITE_COMMUNICATIONS_FUNCTION_URL` (repo variable) and `VITE_COMMUNICATIONS_FUNCTION_KEY` (repo secret) are injected — everything else falls back to the defaults in `config.ts`.
+The live site is **GitHub Pages, driven by [.github/workflows/deploy-pages.yml](.github/workflows/deploy-pages.yml)**: push to `main` → `npm ci && npm run build` → upload `dist/` via `actions/upload-pages-artifact` → `actions/deploy-pages`. The workflow writes `dist/CNAME` = `australis.energy`, touches `.nojekyll`, and copies `index.html` to `404.html` so client-side routes survive a hard refresh. Only `VITE_PORTAL_API_BASE_URL` (repo **variable**, not a secret — `VITE_` values ship in the bundle) is injected; everything else falls back to the defaults in `config.ts`.
 
 Stale/secondary paths, listed so they aren't mistaken for the live one:
 - **`docs/`** is the *legacy* GitHub Pages publishing folder — checked-in build output with an old `CNAME` (`www.australis.energy`) and old hashed assets. It is now in `.gitignore` (so it no longer updates) but the old files are still tracked. It is **not** what deploys; don't rebuild into it.

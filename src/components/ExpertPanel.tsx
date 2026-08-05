@@ -2,22 +2,19 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { BrainCircuit, Sparkles, Users, Clock, Calendar } from "lucide-react";
-import { useEmailSending } from "@/hooks/useEmailSending";
+import { LeadSource, submitLead } from "@/services/accessRequestService";
 import SubmitFailureMessage from "@/components/SubmitFailureMessage";
 
-
-import { useRecaptcha } from "@/hooks/useRecaptcha";
 import React from "react";
 
 type FormType = 'expert-panel' | 'waiting-list' | 'demo-request';
 
 const ExpertPanel = () => {
   const { toast } = useToast();
-  const { executeRecaptcha } = useRecaptcha();
   const [email, setEmail] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [activeForm, setActiveForm] = useState<FormType>('demo-request');
-  const { sendExpertPanelInterest, sendWaitingListInterest, sendDemoRequest, isLoading } = useEmailSending();
 
   const formConfig = {
     'demo-request': {
@@ -27,7 +24,8 @@ const ExpertPanel = () => {
       successTitle: 'Demo Requested!',
       successMessage: 'Our team will reach out soon to schedule your personalized demonstration of the Australis Energy Platform.',
       loadingText: 'Requesting...',
-      handler: sendDemoRequest,
+      // This tab renders an external booking link, not a form — it never submits.
+      source: null,
       icon: <Calendar className="mx-auto text-australis-indigo" />
     },
     'expert-panel': {
@@ -37,7 +35,7 @@ const ExpertPanel = () => {
       successTitle: 'Thank you for joining!',
       successMessage: 'You have been added to our expert panel. We will be in touch soon!',
       loadingText: 'Joining...',
-      handler: sendExpertPanelInterest,
+      source: LeadSource.ExpertPanel,
       icon: <BrainCircuit className="mx-auto text-australis-indigo" />
     },
     'waiting-list': {
@@ -47,7 +45,7 @@ const ExpertPanel = () => {
       successTitle: 'You’re on the list!',
       successMessage: 'You are subscribed to product updates. Stay tuned!',
       loadingText: 'Adding...',
-      handler: sendWaitingListInterest,
+      source: LeadSource.WaitingList,
       icon: <Clock className="mx-auto text-australis-indigo" />
     }
   };
@@ -64,10 +62,15 @@ const ExpertPanel = () => {
       });
       return;
     }
+    // The demo-request tab renders a booking link rather than this form, so it has
+    // no source and can never reach here.
+    const source = currentConfig.source;
+    if (!source) return;
+
+    setIsLoading(true);
+
     try {
-      // Execute reCAPTCHA with action based on form type
-      const recaptchaToken = await executeRecaptcha(activeForm);
-      const result = await currentConfig.handler(email, recaptchaToken || undefined);
+      const result = await submitLead({ email, source });
       if (result.success) {
         setEmail("");
         setIsSubmitted(true);
@@ -81,8 +84,8 @@ const ExpertPanel = () => {
         console.error(`${activeForm} submission failed:`, result.error);
         toast({
           variant: "destructive",
-          title: "We couldn't submit that",
-          description: <SubmitFailureMessage />,
+          title: result.reason === 'rate-limited' ? "One moment" : "We couldn't submit that",
+          description: <SubmitFailureMessage reason={result.reason} />,
           duration: 10000,
         });
       }
@@ -94,6 +97,8 @@ const ExpertPanel = () => {
         description: <SubmitFailureMessage />,
         duration: 10000,
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 

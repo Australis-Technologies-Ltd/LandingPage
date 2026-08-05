@@ -2,13 +2,11 @@ import { Button } from '@/components/ui/button';
 import NewsletterForm from './NewsletterForm';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { sendCtaFormSubmission } from '@/services/communicationsService';
-import { useRecaptcha } from '@/hooks/useRecaptcha';
+import { LeadSource, submitLead } from '@/services/accessRequestService';
 import SubmitFailureMessage from '@/components/SubmitFailureMessage';
 
 const CtaSection = () => {
   const { toast } = useToast();
-  const { executeRecaptcha } = useRecaptcha();
   const [formData, setFormData] = useState({
     name: '',
     workEmail: '',
@@ -44,17 +42,16 @@ const CtaSection = () => {
     setIsSubmitting(true);
     
     try {
-      // Execute reCAPTCHA
-      const recaptchaToken = await executeRecaptcha('cta_form_submission');
-      
       // Awaited, not optimistic — the visitor is only told this worked once it has.
-      const result = await sendCtaFormSubmission(
-        formData.name,
-        formData.workEmail,
-        formData.companyRole,
-        formData.challenge,
-        recaptchaToken || undefined
-      );
+      //
+      // Only name and email are transmitted. companyRole and challenge are still
+      // collected because they shape the conversation the visitor is having, but
+      // Portal.API has nowhere to store them — see BACKLOG.md.
+      const result = await submitLead({
+        name: formData.name,
+        email: formData.workEmail,
+        source: LeadSource.CtaForm,
+      });
 
       if (result.success) {
         toast({
@@ -68,8 +65,8 @@ const CtaSection = () => {
         console.error('CTA form submission failed:', result.error);
         toast({
           variant: "destructive",
-          title: "We couldn't submit that",
-          description: <SubmitFailureMessage />,
+          title: result.reason === 'rate-limited' ? "One moment" : "We couldn't submit that",
+          description: <SubmitFailureMessage reason={result.reason} />,
           duration: 10000,
         });
       }

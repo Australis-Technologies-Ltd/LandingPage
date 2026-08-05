@@ -35,14 +35,11 @@ interface AppConfig {
     };
   };
   
-  // Azure Functions
-  functions: {
-    communications: {
-      url: string;
-      key: string;
-    };
+  // Portal.API — lead capture (POST /access-request)
+  portalApi: {
+    baseUrl: string;
   };
-  
+
   // Azure Service Bus
   serviceBus: {
     connectionString: string;
@@ -58,22 +55,19 @@ interface AppConfig {
  * Validates that required environment variables are present
  */
 const validateConfig = (): void => {
-  // Only validate truly required variables for the landing page
-  const required = [
-    'VITE_COMMUNICATIONS_FUNCTION_URL',
-    'VITE_COMMUNICATIONS_FUNCTION_KEY',
-  ];
-  
+  // Only validate truly required variables for the landing page.
+  const required = ['VITE_PORTAL_API_BASE_URL'];
+
   const missing = required.filter(key => !import.meta.env[key]);
-  
+
   if (missing.length > 0) {
     console.warn(
-      `Missing required environment variables for Expert Panel: ${missing.join(', ')}\n` +
-      'The Expert Panel form will not work until these are configured.'
+      `Missing environment variables: ${missing.join(', ')}\n` +
+      'Lead forms will fall back to the dev Portal.API host baked into config.ts.'
     );
-    
-    // Don't throw errors during build - just warn
-    // The communications service will handle the missing config gracefully
+
+    // Don't throw during build — there is a working default, and a missing
+    // variable should not break the marketing site.
   }
 };
 
@@ -113,13 +107,11 @@ export const config: AppConfig = {
     },
   },
   
-  functions: {
-    communications: {
-      url: getEnvVar('VITE_COMMUNICATIONS_FUNCTION_URL', 'http://localhost:7027/api/send-email'),
-      key: getEnvVar('VITE_COMMUNICATIONS_FUNCTION_KEY', ''),
-    },
+  portalApi: {
+    // Dev is the only Portal.API environment serving traffic; production is parked.
+    baseUrl: getEnvVar('VITE_PORTAL_API_BASE_URL', 'https://api-dev.australis.energy'),
   },
-  
+
   serviceBus: {
     connectionString: getEnvVar('VITE_SERVICE_BUS_CONNECTION_STRING'),
   },

@@ -3,13 +3,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Check } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useEmailSending } from '@/hooks/useEmailSending';
+import { LeadSource, submitLead } from '@/services/accessRequestService';
 import SubmitFailureMessage from '@/components/SubmitFailureMessage';
 const NewsletterForm = () => {
   const [email, setEmail] = useState('');
   const [isSubscribed, setIsSubscribed] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const { sendWaitingListInterest, isLoading } = useEmailSending();
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -22,8 +22,10 @@ const NewsletterForm = () => {
       return;
     }
 
+    setIsLoading(true);
+
     try {
-      const result = await sendWaitingListInterest(email);
+      const result = await submitLead({ email, source: LeadSource.Newsletter });
 
       if (result.success) {
         setIsSubscribed(true);
@@ -36,22 +38,24 @@ const NewsletterForm = () => {
       } else {
         // Previously this branch did nothing at all — a failed signup looked
         // identical to no interaction.
-        console.error('Waiting list signup failed:', result.error);
+        console.error('Newsletter signup failed:', result.error);
         toast({
           variant: "destructive",
-          title: "We couldn't subscribe you",
-          description: <SubmitFailureMessage />,
+          title: result.reason === 'rate-limited' ? "One moment" : "We couldn't subscribe you",
+          description: <SubmitFailureMessage reason={result.reason} />,
           duration: 10000,
         });
       }
     } catch (error) {
-      console.error('Waiting list signup failed:', error);
+      console.error('Newsletter signup failed:', error);
       toast({
         variant: "destructive",
         title: "We couldn't subscribe you",
         description: <SubmitFailureMessage />,
         duration: 10000,
       });
+    } finally {
+      setIsLoading(false);
     }
   };
   return <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 md:p-8">

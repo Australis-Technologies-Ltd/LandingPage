@@ -31,8 +31,11 @@ jobs:
       - name: Build site
         run: npm run build
         env:
-          VITE_COMMUNICATIONS_FUNCTION_URL: ${{ vars.VITE_COMMUNICATIONS_FUNCTION_URL }}
-          VITE_COMMUNICATIONS_FUNCTION_KEY: ${{ secrets.VITE_COMMUNICATIONS_FUNCTION_KEY }}
+          # Portal.API base URL for lead capture (POST /access-request).
+          # Repository variable — NOT a secret: VITE_ values are baked into the
+          # bundle at build time and are publicly readable. If unset, config.ts
+          # falls back to the dev host.
+          VITE_PORTAL_API_BASE_URL: ${{ vars.VITE_PORTAL_API_BASE_URL }}
 
       # Serve dist/ at apex domain + bypass Jekyll processing
       - name: Prepare Pages artifact
