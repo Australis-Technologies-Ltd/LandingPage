@@ -22,8 +22,6 @@ VITE_API_KEY=your_production_api_key
 # Azure Functions
 VITE_GEOSERVICES_FUNCTION_URL=https://your-geoservices-function.azurewebsites.net
 VITE_GEOSERVICES_FUNCTION_KEY=your_geoservices_function_key
-VITE_COMMUNICATIONS_FUNCTION_URL=https://your-communications-function.azurewebsites.net
-VITE_COMMUNICATIONS_FUNCTION_KEY=your_communications_function_key
 
 # Optional Services
 VITE_SERVICE_BUS_CONNECTION_STRING=your_service_bus_connection_string
@@ -128,11 +126,10 @@ VITE_APPINSIGHTS_INSTRUMENTATION_KEY=your_appinsights_key
 - Verify no TypeScript errors locally
 - Check Node.js version compatibility
 
-#### Expert Panel Form Not Working
-- Verify `VITE_COMMUNICATIONS_FUNCTION_URL` is correct
-- Check `VITE_COMMUNICATIONS_FUNCTION_KEY` is function-level key
-- Ensure CORS is configured for your domain
-- Check Azure Function logs for errors
+#### Lead Forms Not Working
+- The forms post to Portal.API `POST /access-request` at `VITE_PORTAL_API_BASE_URL` (a repo variable, default `https://api-dev.australis.energy`)
+- Ensure Portal.API's marketing CORS policy allows your origin
+- Check Portal.API's logs for `AccessRequest` lines
 
 #### Missing Environment Variables
 - Environment variables must be prefixed with `VITE_`

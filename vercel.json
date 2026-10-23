@@ -12,8 +12,6 @@
     "VITE_API_KEY": "@vite_api_key",
     "VITE_GEOSERVICES_FUNCTION_URL": "@vite_geoservices_function_url",
     "VITE_GEOSERVICES_FUNCTION_KEY": "@vite_geoservices_function_key",
-    "VITE_COMMUNICATIONS_FUNCTION_URL": "@vite_communications_function_url",
-    "VITE_COMMUNICATIONS_FUNCTION_KEY": "@vite_communications_function_key",
     "VITE_SERVICE_BUS_CONNECTION_STRING": "@vite_service_bus_connection_string",
     "VITE_APPINSIGHTS_INSTRUMENTATION_KEY": "@vite_appinsights_instrumentation_key",
     "VITE_APP_ENV": "production"

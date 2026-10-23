@@ -19,7 +19,7 @@ There is **no test runner configured** — no Vitest/Jest, no `test` script. "Te
 
 This is the **Australis Energy** marketing landing site + early-access app: a Vite + React + TypeScript SPA built on the `vite_react_shadcn_ts` template.
 
-**This repo is standalone.** It lives in a different GitHub org (`Australis-Energy/LandingSite`) from the Australis *platform* repos (`Australis-Technologies-Ltd/*` — Portal.API, Portal.Web, GeoServices, …) and shares no code, no infrastructure and no deployment pipeline with them. Its backends are Supabase + Azure Functions; the platform runs on AWS. Names overlap (`geoServices`, "developability", constraint IDs) but **nothing here is wired to the platform** — do not treat platform contracts as applying to this repo, and don't "align" the two.
+**This repo is standalone.** It now lives at `Australis-Technologies-Ltd/LandingPage`, alongside the Australis *platform* repos (Portal.API, Portal.Web, GeoServices, …). The old name `Australis-Energy/LandingSite` still redirects, so a clone's `origin` may show it. It shares no code, no infrastructure and no deployment pipeline with the platform repos. Its backends are Supabase + Azure Functions; the platform runs on AWS. Names overlap (`geoServices`, "developability", constraint IDs) but **nothing here is wired to the platform except lead capture** (below). Do not treat platform contracts as applying to this repo, and don't "align" the two.
 
 - The repo was originally scaffolded with [Lovable](https://lovable.dev), but is **no longer maintained through Lovable** — edit it directly. The `lovable-tagger` Vite plugin has been removed, and design work is now done in-repo (the current design was refactored via Fable 5). Remaining Lovable traces: image filenames in `public/uploads/` keep their Lovable UUIDs; `public/launch-video.html` is a patched Lovable "Launch Video" export (regenerate with `node scripts/patch-launch-video.mjs` after re-exporting — see the header comment in that script); and `docs/lovable-uploads/` is part of the stale legacy build output (see Deployment below).
 - `src/integrations/supabase/client.ts` and `src/integrations/supabase/types.ts` are marked auto-generated — prefer regenerating `types.ts` over hand-editing it.
@@ -58,7 +58,7 @@ Two secrets are hardcoded as fallbacks in source rather than being env-only: the
 
 Three former clients were **deleted**: `communicationsService` (Azure Communications Function — emailed a lead and persisted nothing), plus `apiService` and `geoServicesClient`, which were unreferenced and pointed at the decommissioned `australis-energy-dev-app.azurewebsites.net` host. The `useEmailSending` hook and the optimistic-send machinery went with them. **Do not reintroduce optimistic sending for lead capture**: it reports success before the request is made, so a failed send is indistinguishable from a successful one and the lead is lost silently.
 
-The Azure Communications Function itself is still deployed and still defined in `Infrastructure/Azure/prod/FunctionApp.communications.tf` — this repo simply no longer calls it. Decommissioning the resource is a separate decision.
+The Azure Communications Function is still defined in `Infrastructure/Azure/prod/FunctionApp.communications.tf`, but its host `func-communications-prod.azurewebsites.net` no longer resolves (NXDOMAIN, checked 2026-10-23). This repo no longer calls it. The four repo objects that configured it (variables **and** secrets `VITE_COMMUNICATIONS_FUNCTION_URL`/`_KEY`) were deleted on 2026-10-23 (team-tasks-board#270). Its old function key still appears in the public `gh-pages` branch, which holds builds from before the switch to workflow deploys.
 
 ### Lead capture — every form must tell the truth
 Three forms capture leads, all posting to Portal.API `POST /access-request`:
@@ -70,7 +70,7 @@ Three forms capture leads, all posting to Portal.API `POST /access-request`:
 | Waiting list | same file, second tab | email | email | `landing-waiting-list` |
 | Newsletter | [NewsletterForm.tsx](src/components/NewsletterForm.tsx) | email | email | `landing-newsletter` |
 
-**The enquiry form's company-role and primary-challenge answers are collected but never transmitted** — Portal.API has no columns for them. This is a known, accepted gap (tracked in Portal.API's `docs/BACKLOG.md`), not an oversight. They stay on the form because they shape the conversation the visitor is having. Do not smuggle them into `name` or `companyName` to "fix" it, and do not quietly drop them from the form.
+**The enquiry form's company-role and primary-challenge answers are collected but never transmitted** — Portal.API has no columns for them. This is a known, accepted gap (TD-0 on team-tasks-board#270), not an oversight. They stay on the form because they shape the conversation the visitor is having. Do not smuggle them into `name` or `companyName` to "fix" it, and do not quietly drop them from the form.
 
 `ExpertPanel`'s third tab (`demo-request`, the default) renders **no form** — it is an external Outlook booking link. Its config entry carries `source: null` and `handleSubmit` returns early on it, so that tab can never submit.
 
@@ -110,9 +110,10 @@ Pricing tier CTAs ([PricingCard.tsx](src/components/PricingCard.tsx)) take `ctaT
 
 ## Deployment
 
-The live site is **GitHub Pages, driven by [.github/workflows/deploy-pages.yml](.github/workflows/deploy-pages.yml)**: push to `main` → `npm ci && npm run build` → upload `dist/` via `actions/upload-pages-artifact` → `actions/deploy-pages`. The workflow writes `dist/CNAME` = `australis.energy`, touches `.nojekyll`, and copies `index.html` to `404.html` so client-side routes survive a hard refresh. Only `VITE_PORTAL_API_BASE_URL` (repo **variable**, not a secret — `VITE_` values ship in the bundle) is injected; everything else falls back to the defaults in `config.ts`.
+The live site is **GitHub Pages, driven by [.github/workflows/deploy-pages.yml](.github/workflows/deploy-pages.yml)**: push to `main` → `npm ci && npm run build` → upload `dist/` via `actions/upload-pages-artifact` → `actions/deploy-pages`. The workflow writes `dist/CNAME` = `australis.energy`, touches `.nojekyll`, and copies `index.html` to `404.html` so client-side routes survive a hard refresh. Only `VITE_PORTAL_API_BASE_URL` (repo **variable**, not a secret — `VITE_` values ship in the bundle) is injected; everything else falls back to the defaults in `config.ts`. That variable is set to `https://api-dev.australis.energy` (2026-10-23, #270), so **real leads land in dev Portal.API's `AccessRequests` table** until a prod Portal.API exists. It is the repo's only Actions variable, and there are no repo secrets. To redeploy without a commit, dispatch "Deploy to GitHub Pages".
 
 Stale/secondary paths, listed so they aren't mistaken for the live one:
+- **`gh-pages` branch:** old build output from before the workflow deploys. It is not what serves, and it is public, so treat anything in it as published.
 - **`docs/`** is the *legacy* GitHub Pages publishing folder — checked-in build output with an old `CNAME` (`www.australis.energy`) and old hashed assets. It is now in `.gitignore` (so it no longer updates) but the old files are still tracked. It is **not** what deploys; don't rebuild into it.
 - **`vercel.json`** and **`netlify.toml`** are configured but are not the live host.
 - **`DEPLOYMENT.md` is out of date** — it points at a `.github/workflows/deploy.yml` that does not exist and describes a `username.github.io` URL. Trust the workflow file over that doc. (`README.md` likewise still lists GitHub Pages as deploying "via `docs/`".)
