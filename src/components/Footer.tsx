@@ -81,9 +81,16 @@ const Footer = () => {
           </div>
         </div>
 
-        <div className="border-t border-white/10 mt-12 pt-6 flex flex-col md:flex-row items-center justify-between gap-3 text-white/40 text-sm">
-          <p>&copy; {currentYear} Australis Technologies Ltd. All rights reserved.</p>
-          <a href="mailto:hello@australis.energy" className="hover:text-australis-aqua transition-colors">hello@australis.energy</a>
+        <div className="border-t border-white/10 mt-12 pt-6 flex flex-col md:flex-row items-center justify-between gap-4 text-white/40 text-sm">
+          <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-6">
+            <p>&copy; {currentYear} Australis Technologies Ltd. All rights reserved.</p>
+            <a href="mailto:hello@australis.energy" className="hover:text-australis-aqua transition-colors">hello@australis.energy</a>
+          </div>
+          <img
+            src="/assets/brand/nvidia-inception-badge.png"
+            alt="NVIDIA Inception Program"
+            className="h-10 w-auto object-contain rounded-sm"
+          />
         </div>
       </div>
     </footer>

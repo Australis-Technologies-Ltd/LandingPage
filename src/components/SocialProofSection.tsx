@@ -7,10 +7,17 @@ const SocialProofSection = () => {
     threshold: 0.2,
   });
 
-  const partners = [
+  interface Partner {
+    name: string;
+    logo: string;
+    heightClass?: string;
+  }
+
+  const partners: Partner[] = [
     { name: "Geovation", logo: "/uploads/geovation-clean.png" },
     { name: "Ordnance Survey", logo: "/uploads/8624a46a-939e-4720-bb86-9838bd50d189.png" },
-    { name: "AWS", logo: "https://upload.wikimedia.org/wikipedia/commons/9/93/Amazon_Web_Services_Logo.svg" }
+    { name: "AWS", logo: "https://upload.wikimedia.org/wikipedia/commons/9/93/Amazon_Web_Services_Logo.svg" },
+    { name: "NVIDIA", logo: "/assets/brand/nvidia-logo.svg", heightClass: "h-8" },
   ];
 
   return (
@@ -30,7 +37,7 @@ const SocialProofSection = () => {
                 <img
                   src={partner.logo}
                   alt={partner.name}
-                  className="h-11 w-auto object-contain mix-blend-multiply grayscale opacity-60 hover:grayscale-0 hover:opacity-100 transition-all duration-500"
+                  className={`${partner.heightClass ?? 'h-11'} w-auto object-contain mix-blend-multiply grayscale opacity-60 hover:grayscale-0 hover:opacity-100 transition-all duration-500`}
                 />
               </div>
             ))}
