@@ -7,10 +7,10 @@ interface Partner {
 }
 
 const partners: Partner[] = [
-  { name: "Geovation", logo: "/uploads/geovation-clean.png" },
-  { name: "Ordnance Survey", logo: "/uploads/8624a46a-939e-4720-bb86-9838bd50d189.png" },
-  { name: "AWS", logo: "https://upload.wikimedia.org/wikipedia/commons/9/93/Amazon_Web_Services_Logo.svg" },
   { name: "NVIDIA", logo: "/assets/brand/nvidia-logo.svg", heightClass: "h-8" },
+  { name: "AWS", logo: "https://upload.wikimedia.org/wikipedia/commons/9/93/Amazon_Web_Services_Logo.svg" },
+  { name: "Ordnance Survey", logo: "/uploads/8624a46a-939e-4720-bb86-9838bd50d189.png" },
+  { name: "Geovation", logo: "/uploads/geovation-clean.png" },
 ];
 
 const SocialProofSection = () => {
